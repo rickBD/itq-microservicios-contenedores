@@ -1,0 +1,666 @@
+openapi: 3.0.4
+
+info:
+  title: Project Management System API
+  description: API REST para la gestión de proyectos, usuarios y tareas.
+  version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  contact:
+    name: Micro team
+    email: l22140829@queretaro.tecnm.mx
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Servidor de desarrollo
+
+tags:
+  - name: authentication
+    description: Operaciones relacionadas con autenticación y control de acceso
+  - name: users
+    description: Operaciones para la gestión de usuarios del sistema
+  - name: projects
+    description: Operaciones para la administración de proyectos
+  - name: tasks
+    description: Operaciones para la gestión de tareas dentro de los proyectos
+  - name: reports
+    description: Operaciones para generar reportes y estadísticas del sistema
+
+paths:
+  /projects:
+    get:
+      summary: Buscar proyectos
+      description: Permite consultar proyectos existentes utilizando diferentes filtros.
+      operationId: searchProjects
+      tags:
+        - projects
+      parameters:
+        - name: status
+          in: query
+          description: Estado del proyecto
+          required: false
+          schema:
+            type: string
+            enum: ["PLANNING", "IN_PROGRESS", "COMPLETED"]
+          example: "IN_PROGRESS"
+        - name: startDate
+          in: query
+          description: Fecha mínima de inicio del proyecto
+          required: false
+          schema:
+            type: string
+            format: date
+          example: "2026-01-01"
+        - name: endDate
+          in: query
+          description: Fecha máxima de finalización
+          required: false
+          schema:
+            type: string
+            format: date
+          example: "2026-12-31"
+        - name: page
+          in: query
+          description: Número de página
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          description: Cantidad de proyectos por página
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Lista de proyectos encontrados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectList'
+        '400':
+          description: Parámetros de búsqueda inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorInvalidInput:
+                  $ref: '#/components/examples/ApiErrorInvalidInput'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorInternal:
+                  $ref: '#/components/examples/ApiErrorInternal'
+
+    post:
+      summary: Crear nuevo proyecto
+      description: Permite crear un nuevo proyecto dentro del sistema de gestión de proyectos.
+      operationId: createProject
+      tags:
+        - projects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Project'
+      responses:
+        '201':
+          description: Proyecto creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorInvalidInput:
+                  $ref: '#/components/examples/ApiErrorInvalidInput'
+        '409':
+          description: Conflicto  el proyecto ya existe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorConflict:
+                  $ref: '#/components/examples/ApiErrorConflict'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorInternal:
+                  $ref: '#/components/examples/ApiErrorInternal'
+
+  /projects/{projectId}:
+    get:
+      summary: Obtener proyecto por ID
+      description: Obtiene los detalles de un proyecto específico
+      operationId: getProjectById
+      tags:
+        - projects
+      parameters:
+        - name: projectId
+          in: path
+          description: ID del proyecto a obtener
+          required: true
+          schema:
+            type: string
+            pattern: '^proj-[0-9]+$'
+          example: "proj-1001"
+      responses:
+        '200':
+          description: Proyecto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '404':
+          description: Proyecto no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorNotFound:
+                  $ref: '#/components/examples/ApiErrorNotFound'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorInternal:
+                  $ref: '#/components/examples/ApiErrorInternal'
+
+    put:
+      summary: Actualizar proyecto completo
+      description: Actualiza todos los datos de un proyecto existente
+      operationId: updateProject
+      tags:
+        - projects
+      parameters:
+        - name: projectId
+          in: path
+          description: ID del proyecto a actualizar
+          required: true
+          schema:
+            type: string
+            pattern: '^proj-[0-9]+$'
+          example: "proj-1001"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Project'
+      responses:
+        '200':
+          description: Proyecto actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorInvalidInput:
+                  $ref: '#/components/examples/ApiErrorInvalidInput'
+        '404':
+          description: Proyecto no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorNotFound:
+                  $ref: '#/components/examples/ApiErrorNotFound'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorInternal:
+                  $ref: '#/components/examples/ApiErrorInternal'
+
+    patch:
+      summary: Actualizar proyecto parcial
+      description: Actualiza solo algunos campos de un proyecto existente
+      operationId: patchProject
+      tags:
+        - projects
+      parameters:
+        - name: projectId
+          in: path
+          description: ID del proyecto a actualizar
+          required: true
+          schema:
+            type: string
+            pattern: '^proj-[0-9]+$'
+          example: "proj-1001"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectPatch'
+      responses:
+        '200':
+          description: Proyecto actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorInvalidInput:
+                  $ref: '#/components/examples/ApiErrorInvalidInput'
+        '404':
+          description: Proyecto no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorNotFound:
+                  $ref: '#/components/examples/ApiErrorNotFound'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorInternal:
+                  $ref: '#/components/examples/ApiErrorInternal'
+
+    delete:
+      summary: Eliminar proyecto
+      description: Elimina un proyecto del sistema
+      operationId: deleteProject
+      tags:
+        - projects
+      parameters:
+        - name: projectId
+          in: path
+          description: ID del proyecto a eliminar
+          required: true
+          schema:
+            type: string
+            pattern: '^proj-[0-9]+$'
+          example: "proj-1001"
+      responses:
+        '200':
+          description: Proyecto eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteConfirmation'
+        '404':
+          description: Proyecto no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorNotFound:
+                  $ref: '#/components/examples/ApiErrorNotFound'
+        '409':
+          description: No se puede eliminar el proyecto contiene tareas asociadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorProjectHasTasks:
+                  $ref: '#/components/examples/ApiErrorProjectHasTasks'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+              examples:
+                apiErrorInternal:
+                  $ref: '#/components/examples/ApiErrorInternal'
+
+components:
+  schemas:
+    Project:
+      type: object
+      required:
+        - name
+        - startDate
+        - status
+      properties:
+        name:
+          type: string
+          description: Nombre del proyecto
+          minLength: 1
+          maxLength: 200
+          example: "Sistema de Gestión Escolar"
+        description:
+          type: string
+          description: Descripción del proyecto
+          minLength: 5
+          maxLength: 1000
+          example: "Proyecto para administrar estudiantes y cursos"
+        status:
+          type: string
+          description: Estado actual del proyecto
+          enum:
+            - PLANNING
+            - IN_PROGRESS
+            - COMPLETED
+          example: "PLANNING"
+        startDate:
+          type: string
+          format: date
+          description: Fecha de inicio del proyecto
+          example: "2026-04-01"
+        endDate:
+          type: string
+          format: date
+          description: Fecha estimada de finalización
+          example: "2026-06-30"
+        budget:
+          type: number
+          format: double
+          description: Presupuesto estimado del proyecto
+          minimum: 0
+          maximum: 99999999.99
+          multipleOf: 0.01
+          example: 25000.00
+        tags:
+          type: array
+          description: Etiquetas asociadas al proyecto
+          items:
+            type: string
+            minLength: 2
+            maxLength: 30
+          minItems: 1
+          maxItems: 10
+          uniqueItems: true
+          example:
+            - education
+            - backend
+
+    ProjectResponse:
+      type: object
+      required:
+        - id
+        - name
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: ID único del proyecto
+          pattern: '^proj-[0-9]+$'
+          example: "proj-1001"
+        name:
+          type: string
+          description: Nombre del proyecto
+          minLength: 1
+          maxLength: 200
+          example: "Sistema de Gestión Escolar"
+        description:
+          type: string
+          description: Descripción del proyecto
+          example: "Proyecto para administrar estudiantes"
+        status:
+          type: string
+          enum:
+            - PLANNING
+            - IN_PROGRESS
+            - COMPLETED
+          example: "IN_PROGRESS"
+        startDate:
+          type: string
+          format: date
+          example: "2026-04-01"
+        endDate:
+          type: string
+          format: date
+          example: "2026-06-30"
+        createdAt:
+          type: string
+          format: date-time
+          description: Fecha de creación del proyecto
+          example: "2026-03-05T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Fecha de última actualización
+          example: "2026-03-06T11:00:00Z"
+
+    ProjectPatch:
+      type: object
+      description: Campos opcionales para actualización parcial del proyecto
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          minLength: 5
+          maxLength: 1000
+        status:
+          type: string
+          enum:
+            - PLANNING
+            - IN_PROGRESS
+            - COMPLETED
+        endDate:
+          type: string
+          format: date
+
+    Task:
+      type: object
+      required:
+        - title
+        - projectId
+      properties:
+        title:
+          type: string
+          description: Título de la tarea
+          example: Diseñar base de datos
+        description:
+          type: string
+          description: Descripción de la tarea
+          example: Crear el modelo entidad-relación del sistema
+        projectId:
+          type: string
+          description: ID del proyecto al que pertenece
+          example: proj-1001
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, COMPLETED]
+          example: PENDING
+        dueDate:
+          type: string
+          format: date
+          example: 2026-04-10
+
+    TaskResponse:
+      allOf:
+        - $ref: '#/components/schemas/Task'
+        - type: object
+          required:
+            - id
+            - createdAt
+          properties:
+            id:
+              type: string
+              pattern: '^task-[0-9]+$'
+              description: ID único de la tarea
+              example: task-2001
+            createdAt:
+              type: string
+              format: date-time
+              example: 2026-03-12T10:00:00Z
+            updatedAt:
+              type: string
+              format: date-time
+              example: 2026-03-12T11:00:00Z
+
+    Pagination:
+      type: object
+      description: Información de paginación
+      required:
+        - total
+        - page
+        - limit
+        - totalPages
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          example: 45
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 20
+        totalPages:
+          type: integer
+          minimum: 0
+          example: 3
+
+    ProjectList:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectResponse'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    DeleteConfirmation:
+      type: object
+      required:
+        - id
+        - message
+        - deletedAt
+      properties:
+        id:
+          type: string
+          pattern: '^proj-[0-9]+$'
+          example: "proj-1001"
+        message:
+          type: string
+          example: "Proyecto eliminado exitosamente"
+        deletedAt:
+          type: string
+          format: date-time
+          example: "2026-03-10T12:00:00Z"
+
+    ApiError:
+      type: object
+      required:
+        - code
+        - message
+        - timestamp
+      properties:
+        code:
+          type: string
+          description: Código del error
+          example: "PROJECT_NOT_FOUND"
+        message:
+          type: string
+          description: Descripción del error
+          minLength: 5
+          maxLength: 500
+          example: "El proyecto especificado no existe"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-03-10T10:30:00Z"
+        path:
+          type: string
+          description: Ruta donde ocurrió el error
+          example: "/api/v1/projects/proj-1001"
+
+  examples:
+    ApiErrorNotFound:
+      summary: Proyecto no encontrado
+      value:
+        code: PROJECT_NOT_FOUND
+        message: El proyecto especificado no existe
+        timestamp: "2026-03-12T10:00:00Z"
+        path: /api/v1/projects/proj-1001
+        details:
+          projectId: proj-1001
+    ApiErrorInvalidInput:
+      summary: Datos inválidos
+      value:
+        code: INVALID_INPUT
+        message: Los datos enviados no cumplen con el esquema
+        timestamp: "2026-03-12T10:00:00Z"
+        path: /api/v1/projects
+        details:
+          field: name
+          reason: required
+    ApiErrorInternal:
+      summary: Error interno
+      value:
+        code: INTERNAL_ERROR
+        message: Ocurrió un error inesperado
+        timestamp: "2026-03-12T10:00:00Z"
+        path: /api/v1/projects
+        details:
+          errorId: err-2026-001
+    ApiErrorConflict:
+      summary: Conflicto - proyecto ya existe
+      value:
+        code: PROJECT_EXISTS
+        message: El proyecto ya existe en el sistema.
+        timestamp: "2026-03-12T10:00:00Z"
+        path: /api/v1/projects
+    ApiErrorProjectHasTasks:
+      summary: Proyecto tiene tareas
+      value:
+        code: PROJECT_HAS_TASKS
+        message: No se puede eliminar el proyecto porque aún contiene tareas activas o registradas.
+        timestamp: "2026-03-12T10:00:00Z"
+        path: /api/v1/projects/proj-1001
